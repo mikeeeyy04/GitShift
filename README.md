@@ -4,9 +4,11 @@
 [![VS Code Version](https://img.shields.io/badge/VS%20Code-1.90.0+-blue.svg)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+![GitShift Demo](https://i.imgur.com/cqwPE8H.gif)
+
 A powerful VS Code extension that helps developers seamlessly switch between multiple GitHub accounts for commits and pushes. Never commit with the wrong identity again!
 
-## Featuress
+## Features
 
 - **GitHub Authentication**: Sign in with real GitHub accounts using VS Code's built-in authentication for full push/pull access
 - **Beautiful Sidebar Panel**: Dedicated Activity Bar view with minimalist dark theme and intuitive UI
@@ -21,6 +23,8 @@ A powerful VS Code extension that helps developers seamlessly switch between mul
 - **GitHub Notifications**: View and manage your GitHub notifications
 - **Quick Clone**: Clone repositories and automatically switch to the appropriate account
 - **Secure Token Storage**: Uses VS Code's secure secret storage for all tokens
+
+![GitShift Demo](images/demo.png)
 
 ## Installation
 
