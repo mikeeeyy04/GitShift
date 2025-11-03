@@ -44,6 +44,24 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "GitShift",
+      "properties": {
+        "gitshift.repositoryAssociations": {
+          "type": "object",
+          "default": {},
+          "description": "Map repository paths to GitHub account emails. Format: { \"repository-path\": \"account-email\" }",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "gitshift.autoSwitchAccounts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically switch to the associated account when opening a repository"
+        }
+      }
+    },
     "commands": [
       {
         "command": "gitshift.switchAccount",
@@ -253,6 +271,37 @@
         "title": "Refresh Contributions",
         "icon": "$(refresh)",
         "category": "GitShift"
+      },
+      {
+        "command": "gitshift.openSettings",
+        "title": "Open Settings",
+        "icon": "$(gear)",
+        "category": "GitShift"
+      },
+      {
+        "command": "gitshift.switchToAccount1",
+        "title": "Switch to Account 1",
+        "category": "GitShift"
+      },
+      {
+        "command": "gitshift.switchToAccount2",
+        "title": "Switch to Account 2",
+        "category": "GitShift"
+      },
+      {
+        "command": "gitshift.switchToAccount3",
+        "title": "Switch to Account 3",
+        "category": "GitShift"
+      },
+      {
+        "command": "gitshift.switchToAccount4",
+        "title": "Switch to Account 4",
+        "category": "GitShift"
+      },
+      {
+        "command": "gitshift.switchToAccount5",
+        "title": "Switch to Account 5",
+        "category": "GitShift"
       }
     ],
     "viewsContainers": {
@@ -309,6 +358,11 @@
           "group": "navigation@2"
         },
         {
+          "command": "gitshift.openSettings",
+          "when": "view == githubAccountsWebview",
+          "group": "navigation@3"
+        },
+        {
           "command": "gitshift.pull",
           "when": "view == repositoryWebview",
           "group": "navigation@1"
@@ -344,7 +398,34 @@
           "group": "navigation@2"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "gitshift.switchToAccount1",
+        "key": "ctrl+shift+1",
+        "mac": "cmd+shift+1"
+      },
+      {
+        "command": "gitshift.switchToAccount2",
+        "key": "ctrl+shift+2",
+        "mac": "cmd+shift+2"
+      },
+      {
+        "command": "gitshift.switchToAccount3",
+        "key": "ctrl+shift+3",
+        "mac": "cmd+shift+3"
+      },
+      {
+        "command": "gitshift.switchToAccount4",
+        "key": "ctrl+shift+4",
+        "mac": "cmd+shift+4"
+      },
+      {
+        "command": "gitshift.switchToAccount5",
+        "key": "ctrl+shift+5",
+        "mac": "cmd+shift+5"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

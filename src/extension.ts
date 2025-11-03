@@ -1246,6 +1246,32 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  // Register settings command
+  const openSettingsCommand = vscode.commands.registerCommand('gitshift.openSettings', async () => {
+    await vscode.commands.executeCommand('workbench.action.openSettings', '@gitshift');
+  });
+
+  // Register account shortcut commands (Ctrl+Shift+1-5)
+  const switchToAccount1Command = vscode.commands.registerCommand('gitshift.switchToAccount1', async () => {
+    await switchToAccountByIndex(0);
+  });
+
+  const switchToAccount2Command = vscode.commands.registerCommand('gitshift.switchToAccount2', async () => {
+    await switchToAccountByIndex(1);
+  });
+
+  const switchToAccount3Command = vscode.commands.registerCommand('gitshift.switchToAccount3', async () => {
+    await switchToAccountByIndex(2);
+  });
+
+  const switchToAccount4Command = vscode.commands.registerCommand('gitshift.switchToAccount4', async () => {
+    await switchToAccountByIndex(3);
+  });
+
+  const switchToAccount5Command = vscode.commands.registerCommand('gitshift.switchToAccount5', async () => {
+    await switchToAccountByIndex(4);
+  });
+
   context.subscriptions.push(
     switchAccountCommand,
     showActiveAccountCommand,
@@ -1287,7 +1313,13 @@ export async function activate(context: vscode.ExtensionContext) {
     viewRemotesCommand,
     showGitOutputCommand,
     initRepoCommand,
-    publishToGitHubCommand
+    publishToGitHubCommand,
+    openSettingsCommand,
+    switchToAccount1Command,
+    switchToAccount2Command,
+    switchToAccount3Command,
+    switchToAccount4Command,
+    switchToAccount5Command
   );
 
   // Listen for workspace folder changes
@@ -1298,8 +1330,13 @@ export async function activate(context: vscode.ExtensionContext) {
         const isGitRepo = await isGitRepository();
         if (isGitRepo) {
           await updateStatusBar();
-          // Auto-activate account with repository access when workspace changes
-          await autoActivateFirstAccount();
+          // First try to auto-switch to associated account
+          await autoSwitchToAssociatedAccount();
+          // If no association, auto-activate account with repository access
+          const associatedEmail = await getAssociatedAccount();
+          if (!associatedEmail) {
+            await autoActivateFirstAccount();
+          }
         } else {
           // Not a git repository - auto-activate first account if needed
           await autoActivateFirstAccountIfNeeded();
@@ -1451,6 +1488,67 @@ async function autoActivateFirstAccountIfNeeded(): Promise<void> {
     gitshiftOutputChannel?.appendLine(`[autoActivateIfNeeded] Error: ${error.message || 'Unknown error'}`);
     gitshiftOutputChannel?.appendLine(`[autoActivateIfNeeded] Error stack: ${error.stack || 'No stack trace'}`);
     // Silent failure - don't interrupt user workflow
+  }
+}
+
+/**
+ * Switch to account by index (for keyboard shortcuts)
+ */
+async function switchToAccountByIndex(index: number): Promise<void> {
+  try {
+    const accounts = await loadAccounts();
+    if (index >= accounts.length) {
+      vscode.window.showWarningMessage(`No account configured at position ${index + 1}`);
+      return;
+    }
+    await handleSwitchToAccount(accounts[index]);
+    vscode.window.showInformationMessage(`Switched to account ${index + 1}: ${accounts[index].name}`);
+  } catch (error: any) {
+    vscode.window.showErrorMessage(`Failed to switch account: ${error.message}`);
+  }
+}
+
+/**
+ * Get the associated account for the current repository
+ */
+async function getAssociatedAccount(): Promise<string | undefined> {
+  const config = vscode.workspace.getConfiguration('gitshift');
+  const autoSwitch = config.get<boolean>('autoSwitchAccounts', true);
+
+  if (!autoSwitch) {
+    return undefined;
+  }
+
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    return undefined;
+  }
+
+  const repoPath = workspaceFolder.uri.fsPath;
+  const associations = config.get<{ [key: string]: string }>('repositoryAssociations', {});
+
+  return associations[repoPath];
+}
+
+/**
+ * Auto-switch to associated account if configured
+ */
+async function autoSwitchToAssociatedAccount(): Promise<void> {
+  try {
+    const associatedEmail = await getAssociatedAccount();
+    if (!associatedEmail) {
+      return;
+    }
+
+    const accounts = await loadAccounts();
+    const account = accounts.find(acc => acc.email === associatedEmail);
+
+    if (account) {
+      gitshiftOutputChannel?.appendLine(`[autoSwitch] Switching to associated account: ${account.name}`);
+      await handleSwitchToAccount(account);
+    }
+  } catch (error: any) {
+    gitshiftOutputChannel?.appendLine(`[autoSwitch] Error: ${error.message}`);
   }
 }
 

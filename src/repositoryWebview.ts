@@ -616,53 +616,47 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
     }
 
     return `
-      <!-- Stats Summary -->
-      <div class="stats-container">
-        <div class="stat-card staged">
-          <span class="stat-number">${status.staged.length}</span>
-          <span class="stat-label">Staged</span>
-        </div>
-        <div class="stat-card modified">
-          <span class="stat-number">${status.unstaged.length + status.untracked.length}</span>
-          <span class="stat-label">Unstaged</span>
-        </div>
-        <div class="stat-card untracked">
-          <span class="stat-number">${status.staged.length + status.unstaged.length + status.untracked.length}</span>
-          <span class="stat-label">Total</span>
-        </div>
-      </div>
-
-      <!-- Branch Status -->
-      ${status.branch ? `
-        <div class="branch-status">
-          <div class="branch-info">
+      <!-- Compact Header with Branch and Stats -->
+      <div class="changes-header">
+        <div class="branch-line">
+          <div class="branch-name-badge">
             <i class="codicon codicon-git-branch"></i>
             <span>${status.branch}</span>
           </div>
           ${status.ahead > 0 || status.behind > 0 ? `
-            <div class="sync-badges">
-              ${status.ahead > 0 ? `<span class="sync-badge ahead"><i class="codicon codicon-arrow-up"></i>${status.ahead}</span>` : ''}
-              ${status.behind > 0 ? `<span class="sync-badge behind"><i class="codicon codicon-arrow-down"></i>${status.behind}</span>` : ''}
+            <div class="sync-indicators">
+              ${status.ahead > 0 ? `<span class="sync-ind ahead" title="${status.ahead} ahead">↑${status.ahead}</span>` : ''}
+              ${status.behind > 0 ? `<span class="sync-ind behind" title="${status.behind} behind">↓${status.behind}</span>` : ''}
             </div>
           ` : ''}
         </div>
-      ` : ''}
+        <div class="stats-line">
+          <div class="stat-item staged">
+            <span class="stat-dot"></span>
+            <span class="stat-text">${status.staged.length} staged</span>
+          </div>
+          <div class="stat-item modified">
+            <span class="stat-dot"></span>
+            <span class="stat-text">${status.unstaged.length + status.untracked.length} unstaged</span>
+          </div>
+        </div>
+      </div>
 
-      <!-- Action Bar -->
-      <div class="action-bar">
-        <button id="pullBtn" class="action-btn" onclick="pullWithLoading()">
+      <!-- Action Buttons -->
+      <div class="actions-row">
+        <button id="pullBtn" class="action-btn" onclick="pullWithLoading()" title="Pull changes">
           <i class="codicon codicon-arrow-down"></i>
           <span>Pull</span>
         </button>
-        <button id="pushBtn" class="action-btn primary" onclick="pushWithLoading()">
+        <button id="pushBtn" class="action-btn primary" onclick="pushWithLoading()" title="Push changes">
           <i class="codicon codicon-arrow-up"></i>
           <span>Push</span>
         </button>
-        <button id="fetchBtn" class="action-btn" onclick="fetchWithLoading()">
+        <button id="fetchBtn" class="action-btn" onclick="fetchWithLoading()" title="Fetch from remote">
           <i class="codicon codicon-sync"></i>
           <span>Fetch</span>
         </button>
-        <button id="refreshBtn" class="action-btn" onclick="refreshWithLoading()">
+        <button id="refreshBtn" class="action-btn" onclick="refreshWithLoading()" title="Refresh status">
           <i class="codicon codicon-refresh"></i>
           <span>Refresh</span>
         </button>
@@ -670,24 +664,26 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
 
       <!-- Commit Section -->
       ${status.staged.length > 0 ? `
-        <div class="commit-container">
-          <div class="commit-header">
-            <span class="commit-title">Commit Message</span>
-            <span class="commit-count">${status.staged.length} file${status.staged.length !== 1 ? 's' : ''}</span>
-          </div>
-          <div style="position: relative;">
-            <div id="commitMessageLoader" class="commit-message-loader" style="display: none;"></div>
-            <textarea id="commitMessage" placeholder="Enter commit message...&#10;Ctrl+Enter to commit & push&#10;Ctrl+S to commit only" onkeydown="handleCommitKeyboard(event)"></textarea>
-            <button id="generateMsgBtn" class="generate-msg-btn" onclick="fillCommitMessage()" title="Generate commit message">
+        <div class="commit-box">
+          <div class="commit-box-header">
+            <div class="commit-label">
+              <i class="codicon codicon-comment"></i>
+              <span>Commit ${status.staged.length} file${status.staged.length !== 1 ? 's' : ''}</span>
+            </div>
+            <button id="generateMsgBtn" class="icon-btn" onclick="fillCommitMessage()" title="Generate commit message">
               <i class="codicon codicon-sparkle"></i>
             </button>
           </div>
-          <div class="commit-actions">
-            <button id="commitBtn" class="commit-btn secondary" onclick="commitOnlyWithLoading()">
+          <div style="position: relative;">
+            <div id="commitMessageLoader" class="commit-message-loader" style="display: none;"></div>
+            <textarea id="commitMessage" placeholder="Describe your changes..." onkeydown="handleCommitKeyboard(event)"></textarea>
+          </div>
+          <div class="commit-actions-row">
+            <button id="commitBtn" class="commit-action-btn" onclick="commitOnlyWithLoading()">
               <i class="codicon codicon-check"></i>
               <span>Commit</span>
             </button>
-            <button id="commitPushBtn" class="commit-btn" onclick="commitAndPushWithLoading()">
+            <button id="commitPushBtn" class="commit-action-btn primary" onclick="commitAndPushWithLoading()">
               <i class="codicon codicon-rocket"></i>
               <span>Commit & Push</span>
             </button>
@@ -862,12 +858,14 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
                   <span class="commit-date">${commit.date}</span>
                 </div>
                 <div class="commit-message">${commit.message}</div>
-                <div class="commit-author">${commit.author}</div>
-                ${refBadges.length > 0 ? `
-                  <div class="commit-refs">
-                    ${refBadges.join('')}
-                  </div>
-                ` : ''}
+                <div class="commit-footer">
+                  <div class="commit-author">${commit.author}</div>
+                  ${refBadges.length > 0 ? `
+                    <div class="commit-refs">
+                      ${refBadges.join('')}
+                    </div>
+                  ` : ''}
+                </div>
               </div>
             `;
     }).join('')}
@@ -891,98 +889,101 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: transparent;
       color: var(--vscode-foreground);
-      padding: clamp(8px, 2.5vw, 14px);
-      font-size: clamp(12px, 3vw, 13px);
-      line-height: 1.5;
-      animation: fadeIn 0.3s ease-in;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: hidden;
     }
 
     .codicon[class*='codicon-'] {
-      font-size: 12px !important;
+      font-size: 14px !important;
     }
 
     .file-status-icon.codicon {
       font-size: 16px !important;
     }
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(-4px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
     /* Tab Navigation */
     .tab-nav {
       display: flex;
-      gap: clamp(6px, 1.5vw, 8px);
-      margin-bottom: clamp(16px, 4vw, 20px);
+      gap: 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--vscode-panel-border);
       position: sticky;
       top: 0;
       z-index: 100;
-      margin-top: calc(-1 * clamp(8px, 2.5vw, 14px));
-      background: var(--vscode-activityBar-background);
-      padding: 6px 0px;
+      background: var(--vscode-sideBar-background);
+      margin-left: -12px;
+      margin-right: -12px;
+      margin-top: -12px;
+      padding: 0 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .tab-nav::-webkit-scrollbar {
+      display: none;
     }
 
     .tab-btn {
       flex: 1;
-      padding: clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 16px);
-      background: var(--vscode-editor-background);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 6px;
-      color: var(--vscode-descriptionForeground);
+      min-width: fit-content;
+      padding: 10px 12px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--vscode-foreground);
       cursor: pointer;
       font-family: inherit;
-      font-size: clamp(11px, 2.8vw, 12px);
+      font-size: 12px;
       font-weight: 500;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: clamp(5px, 1.2vw, 6px);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      bottom: -1px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      gap: 6px;
+      transition: all 0.2s ease;
+      opacity: 0.7;
+      white-space: nowrap;
     }
 
     .tab-btn:hover {
-      color: var(--vscode-foreground);
+      opacity: 1;
       background: var(--vscode-list-hoverBackground);
-      border-color: var(--vscode-focusBorder);
-      transform: translateY(-2px);
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-      z-index: 1;
     }
 
     .tab-btn.active {
-      color: var(--vscode-foreground);
-      border-color: var(--vscode-focusBorder);
-      background: var(--vscode-list-hoverBackground);
+      opacity: 1;
+      border-bottom-color: var(--vscode-focusBorder);
       font-weight: 600;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
-      z-index: 2;
-      transform: translateY(-1px);
-    }
-
-    .tab-btn.active:hover {
-      transform: translateY(-1px);
     }
 
     .tab-btn i {
-      font-size: clamp(13px, 3.2vw, 14px);
-      opacity: 0.9;
+      font-size: 14px;
+      flex-shrink: 0;
     }
 
-    .tab-btn.active i {
-      opacity: 1;
+    .tab-btn span {
+      display: inline;
+    }
+
+    /* Responsive: Hide text labels on very narrow widths */
+    @media (max-width: 250px) {
+      .tab-btn {
+        padding: 10px 8px;
+        gap: 0;
+      }
+      
+      .tab-btn span {
+        display: none;
+      }
+      
+      .tab-btn i {
+        font-size: 16px;
+      }
     }
 
     .tab-content {
@@ -996,7 +997,6 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
 
     .tab-pane.active {
       display: block;
-      animation: fadeIn 0.2s ease-in;
     }
 
     /* Include all styles from changes, branches, and commits */
@@ -1008,90 +1008,137 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
   }
 
   private _getChangesStyles(): string {
-    // Extract and return all Changes-specific styles
-    // For brevity, I'll include the essential ones
     return `
-    .stats-container {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: clamp(8px, 2vw, 10px);
-      margin-bottom: clamp(12px, 3vw, 16px);
-    }
-
-    .stat-card {
+    /* Compact Header */
+    .changes-header {
       background: var(--vscode-editor-background);
       border: 1px solid var(--vscode-panel-border);
-      border-radius: 6px;
-      padding: clamp(10px, 2.5vw, 12px);
-      text-align: center;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
     }
 
-    .stat-card:hover {
-      border-color: var(--vscode-focusBorder);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .stat-number {
-      font-size: clamp(18px, 4.5vw, 22px);
-      font-weight: 700;
-      display: block;
-      margin-bottom: clamp(4px, 1vw, 6px);
-    }
-
-    .stat-label {
-      font-size: clamp(9px, 2.2vw, 10px);
-      color: var(--vscode-descriptionForeground);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 600;
-    }
-
-    .stat-card.staged .stat-number { color: var(--vscode-gitDecoration-addedResourceForeground); }
-    .stat-card.modified .stat-number { color: var(--vscode-gitDecoration-modifiedResourceForeground); }
-    .stat-card.untracked .stat-number { color: var(--vscode-gitDecoration-untrackedResourceForeground); }
-
-    .action-bar {
+    .branch-line {
       display: flex;
-      gap: clamp(6px, 1.5vw, 8px);
-      margin-bottom: clamp(12px, 3vw, 16px);
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .branch-name-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--vscode-foreground);
+    }
+
+    .branch-name-badge i {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .sync-indicators {
+      display: flex;
+      gap: 6px;
+    }
+
+    .sync-ind {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: var(--vscode-editor-font-family), monospace;
+    }
+
+    .sync-ind.ahead {
+      color: var(--vscode-gitDecoration-addedResourceForeground);
+      background: rgba(var(--vscode-gitDecoration-addedResourceForeground), 0.15);
+    }
+
+    .sync-ind.behind {
+      color: var(--vscode-gitDecoration-modifiedResourceForeground);
+      background: rgba(var(--vscode-gitDecoration-modifiedResourceForeground), 0.15);
+    }
+
+    .stats-line {
+      display: flex;
+      gap: 16px;
+      padding-top: 8px;
+      border-top: 1px solid var(--vscode-panel-border);
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    .stat-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .stat-item.staged .stat-dot {
+      background: var(--vscode-gitDecoration-addedResourceForeground);
+    }
+
+    .stat-item.modified .stat-dot {
+      background: var(--vscode-gitDecoration-modifiedResourceForeground);
+    }
+
+    .stat-text {
+      font-weight: 500;
+    }
+
+    /* Minimalist Action Buttons */
+    .actions-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
     }
 
     .action-btn {
       flex: 1;
-      padding: clamp(8px, 2vw, 10px);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 6px;
-      font-size: clamp(10px, 2.5vw, 11px);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      background: var(--vscode-editor-background);
+      background: transparent;
       color: var(--vscode-foreground);
-      text-align: center;
-      position: relative;
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 3px;
+      padding: 7px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: clamp(4px, 1vw, 6px);
+      gap: 5px;
+      position: relative;
+    }
+
+    .action-btn i {
+      font-size: 13px;
+      opacity: 0.8;
     }
 
     .action-btn:hover {
       background: var(--vscode-list-hoverBackground);
       border-color: var(--vscode-focusBorder);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .action-btn.primary {
       background: var(--vscode-button-background);
       color: var(--vscode-button-foreground);
-      border-color: transparent;
+      border-color: var(--vscode-button-background);
     }
 
     .action-btn.primary:hover {
       background: var(--vscode-button-hoverBackground);
+      border-color: var(--vscode-button-hoverBackground);
     }
 
     .action-btn:disabled {
@@ -1100,119 +1147,109 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
       pointer-events: none;
     }
 
+    .action-btn.loading {
+      pointer-events: none;
+    }
+
     .action-btn.loading::after {
       content: '';
       position: absolute;
-      width: 10px;
-      height: 10px;
+      width: 11px;
+      height: 11px;
       border: 2px solid transparent;
       border-top-color: currentColor;
       border-radius: 50%;
       animation: spinner 0.6s linear infinite;
     }
 
+    .action-btn.loading span {
+      opacity: 0;
+    }
+
+    .action-btn.loading i {
+      opacity: 0;
+    }
+
     @keyframes spinner {
       to { transform: rotate(360deg); }
     }
 
-    .branch-status {
+    /* Commit Box */
+    .commit-box {
       background: var(--vscode-editor-background);
       border: 1px solid var(--vscode-panel-border);
-      border-radius: 6px;
-      padding: clamp(10px, 2.5vw, 12px);
-      margin-bottom: clamp(12px, 3vw, 16px);
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+
+    .commit-box-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: clamp(8px, 2vw, 10px);
-      flex-wrap: wrap;
+      margin-bottom: 8px;
     }
 
-    .branch-info {
+    .commit-label {
       display: flex;
       align-items: center;
-      gap: clamp(6px, 1.5vw, 8px);
-      font-size: clamp(11px, 2.8vw, 12px);
-      font-weight: 700;
-    }
-
-    .sync-badges {
-      display: flex;
-      gap: clamp(6px, 1.5vw, 8px);
-    }
-
-    .sync-badge {
-      display: flex;
-      align-items: center;
-      gap: clamp(4px, 1vw, 5px);
-      padding: clamp(4px, 1vw, 5px) clamp(8px, 2vw, 10px);
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 12px;
-      font-size: clamp(9px, 2.2vw, 10px);
-      font-weight: 700;
-      color: var(--vscode-descriptionForeground);
-    }
-
-    .sync-badge.ahead {
-      color: var(--vscode-gitDecoration-addedResourceForeground);
-      border-color: var(--vscode-gitDecoration-addedResourceForeground);
-    }
-
-    .sync-badge.behind {
-      color: var(--vscode-gitDecoration-modifiedResourceForeground);
-      border-color: var(--vscode-gitDecoration-modifiedResourceForeground);
-    }
-
-    .commit-container {
-      background: var(--vscode-editor-background);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 8px;
-      padding: clamp(12px, 3vw, 16px);
-      margin-bottom: clamp(14px, 3.5vw, 18px);
-    }
-
-    .commit-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: clamp(10px, 2.5vw, 12px);
-    }
-
-    .commit-title {
-      font-size: clamp(10px, 2.5vw, 11px);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .commit-count {
-      font-size: clamp(9px, 2.2vw, 10px);
-      color: var(--vscode-descriptionForeground);
-      background: rgba(255, 255, 255, 0.08);
-      padding: clamp(3px, 0.8vw, 4px) clamp(8px, 2vw, 10px);
-      border-radius: 12px;
+      gap: 6px;
+      font-size: 11px;
       font-weight: 600;
+      color: var(--vscode-foreground);
+    }
+
+    .commit-label i {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    .icon-btn {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      background: transparent;
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 3px;
+      color: var(--vscode-foreground);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      background: var(--vscode-list-hoverBackground);
+      border-color: var(--vscode-focusBorder);
+    }
+
+    .icon-btn i {
+      font-size: 13px;
     }
 
     textarea {
       width: 100%;
-      min-height: clamp(80px, 18vw, 100px);
-      padding: clamp(12px, 3vw, 14px);
+      min-height: 70px;
+      padding: 8px 10px;
       background: var(--vscode-input-background);
       color: var(--vscode-input-foreground);
       border: 1px solid var(--vscode-input-border);
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: clamp(11px, 2.8vw, 12px);
+      border-radius: 3px;
+      font-family: var(--vscode-font-family);
+      font-size: 12px;
       resize: vertical;
       outline: none;
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
     textarea:focus {
       border-color: var(--vscode-focusBorder);
-      box-shadow: 0 0 0 2px rgba(var(--vscode-focusBorder-rgb, 0, 122, 204), 0.2);
+    }
+
+    textarea::placeholder {
+      color: var(--vscode-input-placeholderForeground);
+      opacity: 0.6;
     }
 
     .commit-message-loader {
@@ -1224,7 +1261,7 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
       background: var(--vscode-progressBar-background);
       overflow: hidden;
       z-index: 10;
-      border-radius: 6px 6px 0 0;
+      border-radius: 3px 3px 0 0;
     }
 
     .commit-message-loader::before {
@@ -1247,69 +1284,53 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
       }
     }
 
-    .generate-msg-btn {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      width: 28px;
-      height: 28px;
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 4px;
-      background: var(--vscode-editor-background);
-      color: var(--vscode-foreground);
-      cursor: pointer;
+    .commit-actions-row {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
+      gap: 6px;
+      margin-top: 8px;
     }
 
-    .generate-msg-btn:hover {
-      background: var(--vscode-list-hoverBackground);
-      border-color: var(--vscode-focusBorder);
-      transform: scale(1.05);
-    }
-
-    .commit-actions {
-      display: flex;
-      gap: clamp(4px, 1vw, 6px);
-      margin-top: clamp(10px, 2.5vw, 12px);
-    }
-
-    .commit-btn {
+    .commit-action-btn {
       flex: 1;
-      padding: clamp(9px, 2.2vw, 11px);
-      background: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
+      padding: 8px 10px;
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
       border: none;
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
       font-family: inherit;
-      font-size: clamp(10px, 2.5vw, 11px);
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 500;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: clamp(4px, 1vw, 6px);
+      gap: 5px;
+      transition: all 0.15s ease;
     }
 
-    .commit-btn:hover {
+    .commit-action-btn i {
+      font-size: 13px;
+    }
+
+    .commit-action-btn:hover {
+      background: var(--vscode-button-secondaryHoverBackground);
+    }
+
+    .commit-action-btn:active {
+      transform: scale(0.97);
+    }
+
+    .commit-action-btn.primary {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+    }
+
+    .commit-action-btn.primary:hover {
       background: var(--vscode-button-hoverBackground);
     }
 
-    .commit-btn.secondary {
-      background: transparent;
-      color: var(--vscode-foreground);
-      border: 1px solid var(--vscode-panel-border);
-    }
-
-    .commit-btn.secondary:hover {
-      background: var(--vscode-list-hoverBackground);
-      border-color: var(--vscode-focusBorder);
-    }
-
-    .commit-btn.loading::after {
+    .commit-action-btn.loading::after {
       content: '';
       position: absolute;
       width: 12px;
@@ -1320,42 +1341,49 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
       animation: spinner 0.6s linear infinite;
     }
 
+    .commit-action-btn.loading span {
+      opacity: 0;
+    }
+
+    .commit-action-btn.loading i {
+      opacity: 0;
+    }
+
     .section {
-      margin-bottom: clamp(14px, 3.5vw, 18px);
+      margin-bottom: 12px;
     }
 
     .section-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 14px);
+      padding: 7px 10px;
       background: var(--vscode-editor-background);
       border: 1px solid var(--vscode-panel-border);
-      border-radius: 6px;
+      border-radius: 3px;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      margin-bottom: clamp(6px, 1.5vw, 8px);
+      transition: all 0.15s ease;
+      margin-bottom: 4px;
       user-select: none;
     }
 
     .section-header:hover {
       background: var(--vscode-list-hoverBackground);
       border-color: var(--vscode-focusBorder);
-      transform: translateX(2px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .section-title {
       display: flex;
       align-items: center;
-      gap: clamp(8px, 2vw, 10px);
+      gap: 6px;
       flex: 1;
     }
 
     .section-chevron {
-      font-size: clamp(12px, 3vw, 14px);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 11px;
+      transition: transform 0.2s ease;
       color: var(--vscode-descriptionForeground);
+      opacity: 0.8;
     }
 
     .section-header.collapsed .section-chevron {
@@ -1363,84 +1391,89 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
     }
 
     .section-label {
-      font-size: clamp(10px, 2.5vw, 11px);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
     }
 
     .section-count {
-      font-size: clamp(9px, 2.2vw, 10px);
+      font-size: 10px;
       color: var(--vscode-descriptionForeground);
-      background: rgba(255, 255, 255, 0.08);
-      padding: clamp(3px, 0.8vw, 4px) clamp(8px, 2vw, 10px);
-      border-radius: 12px;
+      background: var(--vscode-badge-background);
+      padding: 2px 5px;
+      border-radius: 3px;
       font-weight: 600;
+      min-width: 18px;
+      text-align: center;
     }
 
     .section-actions {
       display: flex;
-      gap: clamp(3px, 0.8vw, 4px);
+      gap: 4px;
       align-items: center;
     }
 
     .quick-action {
-      padding: clamp(5px, 1.2vw, 6px) clamp(8px, 2vw, 10px);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 5px;
-      background: transparent;
-      color: var(--vscode-foreground);
+      padding: 3px 7px;
+      border: none;
+      border-radius: 3px;
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
       cursor: pointer;
-      font-size: clamp(9px, 2.2vw, 10px);
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 500;
       white-space: nowrap;
       display: flex;
       align-items: center;
-      gap: clamp(4px, 1vw, 5px);
+      gap: 3px;
+      transition: all 0.15s ease;
+    }
+
+    .quick-action i {
+      font-size: 11px;
     }
 
     .quick-action:hover {
-      background: var(--vscode-button-hoverBackground);
-      border-color: var(--vscode-focusBorder);
-      transform: translateY(-1px);
+      background: var(--vscode-button-secondaryHoverBackground);
+    }
+
+    .quick-action:active {
+      transform: scale(0.96);
     }
 
     .section-content {
-      max-height: 1000px;
+      max-height: 2000px;
       opacity: 1;
       overflow: hidden;
-      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      transition: max-height 0.3s ease, opacity 0.2s ease;
     }
 
     .section-content.collapsed {
       max-height: 0;
       opacity: 0;
-      transform: translateY(-8px);
     }
 
     .list-item {
       background: var(--vscode-editor-background);
       border: 1px solid var(--vscode-panel-border);
-      border-radius: 6px;
-      padding: clamp(8px, 2vw, 10px);
-      margin-bottom: clamp(5px, 1.2vw, 6px);
+      border-radius: 3px;
+      padding: 6px 8px;
+      margin-bottom: 3px;
       display: flex;
       align-items: center;
-      gap: clamp(8px, 2vw, 10px);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      gap: 8px;
+      transition: all 0.15s ease;
     }
 
     .list-item:hover {
-      border-color: var(--vscode-focusBorder);
       background: var(--vscode-list-hoverBackground);
-      transform: translateX(2px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-color: var(--vscode-focusBorder);
     }
 
     .file-status-icon {
       flex-shrink: 0;
-      font-size: clamp(16px, 4vw, 18px) !important;
-      opacity: 0.95;
+      font-size: 14px !important;
+      opacity: 0.9;
     }
 
     .file-status-icon.staged { color: var(--vscode-gitDecoration-addedResourceForeground); }
@@ -1451,39 +1484,31 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
     .file-info {
       flex: 1;
       min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: clamp(2px, 0.5vw, 3px);
       cursor: pointer;
-      padding: clamp(3px, 0.8vw, 4px);
-      margin: clamp(-3px, -0.8vw, -4px);
-      border-radius: 4px;
-    }
-
-    .file-info:hover {
-      background: rgba(255, 255, 255, 0.05);
     }
 
     .file-name {
-      font-size: clamp(12px, 3vw, 13px);
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 500;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      line-height: 1.4;
     }
 
     .file-path {
-      font-size: clamp(10px, 2.5vw, 11px);
+      font-size: 10px;
       color: var(--vscode-descriptionForeground);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      opacity: 0.8;
+      opacity: 0.7;
+      margin-top: 1px;
     }
 
     .file-actions {
       display: none;
-      gap: clamp(4px, 1vw, 5px);
+      gap: 3px;
       flex-shrink: 0;
     }
 
@@ -1492,73 +1517,66 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
     }
 
     .file-action {
-      width: clamp(22px, 5.5vw, 26px);
-      height: clamp(22px, 5.5vw, 26px);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 5px;
-      background: transparent;
-      color: var(--vscode-foreground);
+      width: 20px;
+      height: 20px;
+      border: none;
+      border-radius: 3px;
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
       cursor: pointer;
-      font-size: clamp(11px, 2.8vw, 12px);
+      font-size: 11px;
       font-weight: 600;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.15s ease;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .file-action:hover {
-      background: var(--vscode-button-hoverBackground);
-      border-color: var(--vscode-focusBorder);
-      transform: scale(1.1);
+      background: var(--vscode-button-secondaryHoverBackground);
+      transform: scale(1.05);
     }
 
     .file-action.danger:hover {
       background: var(--vscode-inputValidation-errorBackground);
-      border-color: var(--vscode-inputValidation-errorBorder);
       color: var(--vscode-errorForeground);
     }
 
     .empty-state {
       text-align: center;
-      padding: clamp(40px, 10vw, 56px) clamp(20px, 5vw, 32px);
+      padding: 48px 20px;
       color: var(--vscode-descriptionForeground);
     }
 
     .empty-state-icon {
-      font-size: clamp(36px, 9vw, 44px);
-      opacity: 0.4;
-      margin-bottom: clamp(12px, 3vw, 16px);
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.05); }
+      font-size: 40px;
+      opacity: 0.5;
+      margin-bottom: 12px;
     }
 
     .empty-state h3 {
-      font-size: clamp(14px, 3.5vw, 16px);
-      font-weight: 700;
-      margin-bottom: clamp(6px, 1.5vw, 8px);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--vscode-foreground);
     }
 
     .empty-state p {
-      font-size: clamp(11px, 2.8vw, 12px);
-      line-height: 1.6;
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     .warning-box {
       background: var(--vscode-inputValidation-warningBackground);
       border: 1px solid var(--vscode-inputValidation-warningBorder);
-      border-left: 4px solid var(--vscode-inputValidation-warningBorder);
-      border-radius: 6px;
-      padding: clamp(12px, 3vw, 14px);
-      margin-bottom: clamp(14px, 3.5vw, 18px);
-      font-size: clamp(11px, 2.8vw, 12px);
+      border-left: 3px solid var(--vscode-inputValidation-warningBorder);
+      border-radius: 2px;
+      padding: 10px 12px;
+      margin-bottom: 16px;
+      font-size: 12px;
       display: flex;
       align-items: center;
-      gap: clamp(8px, 2vw, 10px);
+      gap: 8px;
     }
     `;
   }
@@ -1566,20 +1584,30 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
   private _getBranchesStyles(): string {
     return `
     .input-container {
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 16px;
       display: flex;
-      gap: clamp(6px, 1.5vw, 8px);
-      margin-bottom: clamp(12px, 3vw, 16px);
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .input-container:focus-within {
+      background: var(--vscode-list-hoverBackground);
+      border-color: var(--vscode-focusBorder);
     }
 
     input {
       flex: 1;
-      padding: clamp(6px, 1.5vw, 8px);
+      padding: 6px 8px;
       background: var(--vscode-input-background);
       color: var(--vscode-input-foreground);
       border: 1px solid var(--vscode-input-border);
       border-radius: 4px;
       font-family: inherit;
-      font-size: clamp(11px, 2.8vw, 12px);
+      font-size: 12px;
       outline: none;
     }
 
@@ -1588,14 +1616,14 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
     }
 
     .add-btn {
-      padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 14px);
+      padding: 6px 14px;
       background: var(--vscode-button-background);
       color: var(--vscode-button-foreground);
-      border: none;
+      border: 1px solid var(--vscode-button-background);
       border-radius: 4px;
       cursor: pointer;
       font-family: inherit;
-      font-size: clamp(11px, 2.8vw, 12px);
+      font-size: 12px;
       font-weight: 500;
       white-space: nowrap;
       position: relative;
@@ -1604,6 +1632,11 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
 
     .add-btn:hover {
       background: var(--vscode-button-hoverBackground);
+      border-color: var(--vscode-button-hoverBackground);
+    }
+
+    .add-btn:active {
+      transform: scale(0.96);
     }
 
     .add-btn:disabled {
@@ -1634,12 +1667,17 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
     .list-item.active {
       border-color: var(--vscode-focusBorder);
       background: var(--vscode-list-hoverBackground);
+      cursor: default;
+    }
+
+    .list-item.active:hover {
+      cursor: default;
     }
 
     .branch-icon {
       flex-shrink: 0;
-      opacity: 0.8;
-      font-size: clamp(13px, 3.2vw, 14px);
+      opacity: 0.9;
+      font-size: 14px;
     }
 
     .branch-name {
@@ -1647,13 +1685,13 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: clamp(11px, 2.8vw, 12px);
+      font-size: 12px;
       font-weight: 500;
     }
 
     .branch-actions {
       display: none;
-      gap: clamp(4px, 1vw, 6px);
+      gap: 4px;
       flex-shrink: 0;
     }
 
@@ -1661,17 +1699,31 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
       display: flex;
     }
 
+    .branch-actions button {
+      padding: 4px 8px;
+      border: 1px solid var(--vscode-button-border);
+      border-radius: 4px;
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+
+    .branch-actions button:hover {
+      background: var(--vscode-button-secondaryHoverBackground);
+    }
+
     .badge {
-      height: clamp(22px, 5.5vw, 26px);
-      padding: 0 clamp(6px, 1.5vw, 8px);
-      border-radius: 3px;
-      font-size: clamp(7px, 1.8vw, 8px);
-      font-weight: 400;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 9px;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      background: transparent;
-      border: 1px solid var(--vscode-panel-border);
-      color: #ffffff;
+      letter-spacing: 0.5px;
+      background: var(--vscode-badge-background);
+      color: var(--vscode-badge-foreground);
       white-space: nowrap;
       display: flex;
       align-items: center;
@@ -1684,42 +1736,62 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
   private _getCommitsStyles(): string {
     return `
     .header {
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: clamp(12px, 3vw, 16px);
-      gap: clamp(8px, 2vw, 12px);
+      gap: 8px;
     }
 
     .branch-info {
-      font-size: clamp(11px, 2.8vw, 12px);
-      color: var(--vscode-descriptionForeground);
+      font-size: 11px;
+      color: var(--vscode-foreground);
       display: flex;
       align-items: center;
-      gap: clamp(4px, 1vw, 6px);
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .branch-info i {
+      opacity: 0.8;
+      font-size: 13px;
     }
 
     .branch-name {
-      font-weight: 500;
+      font-weight: 600;
       color: var(--vscode-foreground);
     }
 
     .refresh-btn {
-      padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 14px);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 4px;
-      font-size: clamp(11px, 2.8vw, 12px);
-      font-weight: 400;
+      padding: 5px 8px;
+      border: none;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.15s ease;
-      background: var(--vscode-editor-background);
-      color: var(--vscode-foreground);
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
       position: relative;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .refresh-btn i {
+      font-size: 12px;
     }
 
     .refresh-btn:hover {
-      background: var(--vscode-list-hoverBackground);
-      border-color: var(--vscode-focusBorder);
+      background: var(--vscode-button-secondaryHoverBackground);
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.96);
     }
 
     .refresh-btn.loading::after {
@@ -1742,89 +1814,124 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
     }
 
     .commit-list {
-      margin-bottom: clamp(12px, 3vw, 16px);
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .commit-item {
       background: var(--vscode-editor-background);
       border: 1px solid var(--vscode-panel-border);
-      border-radius: 6px;
-      padding: clamp(10px, 2.5vw, 12px);
-      margin-bottom: clamp(6px, 1.5vw, 8px);
+      border-radius: 4px;
+      padding: 10px;
       cursor: pointer;
       transition: all 0.15s ease;
+      position: relative;
     }
 
     .commit-item:hover {
-      border-color: var(--vscode-focusBorder);
       background: var(--vscode-list-hoverBackground);
+      border-color: var(--vscode-focusBorder);
+    }
+
+    .commit-item:active {
+      transform: scale(0.99);
     }
 
     .commit-header {
       display: flex;
       align-items: center;
-      gap: clamp(6px, 1.5vw, 8px);
-      margin-bottom: clamp(6px, 1.5vw, 8px);
+      gap: 8px;
+      margin-bottom: 6px;
     }
 
     .commit-hash {
-      font-family: 'Consolas', 'Courier New', monospace;
-      font-size: clamp(10px, 2.5vw, 11px);
-      color: var(--vscode-descriptionForeground);
-      background: var(--vscode-editor-background);
-      border: 1px solid var(--vscode-panel-border);
-      padding: clamp(2px, 0.5vw, 3px) clamp(4px, 1vw, 6px);
+      font-family: var(--vscode-editor-font-family), 'Consolas', 'Courier New', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--vscode-textPreformat-foreground);
+      background: var(--vscode-textCodeBlock-background);
+      padding: 2px 6px;
       border-radius: 3px;
+      border: 1px solid var(--vscode-panel-border);
     }
 
     .commit-date {
-      font-size: clamp(10px, 2.5vw, 11px);
+      font-size: 10px;
       color: var(--vscode-descriptionForeground);
-    }
-
-    .commit-message {
-      font-size: clamp(11px, 2.8vw, 12px);
-      margin-bottom: clamp(4px, 1vw, 6px);
-      line-height: 1.4;
       font-weight: 500;
     }
 
+    .commit-message {
+      font-size: 12px;
+      margin-bottom: 6px;
+      line-height: 1.5;
+      font-weight: 500;
+      color: var(--vscode-foreground);
+    }
+
+    .commit-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .commit-author {
-      font-size: clamp(10px, 2.5vw, 11px);
+      font-size: 10px;
       color: var(--vscode-descriptionForeground);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .commit-author::before {
+      content: '•';
+      font-size: 10px;
+      opacity: 0.6;
     }
 
     .commit-refs {
       display: flex;
       flex-wrap: wrap;
-      gap: clamp(4px, 1vw, 6px);
-      margin-top: clamp(6px, 1.5vw, 8px);
+      gap: 3px;
     }
 
     .ref-badge {
       display: inline-flex;
       align-items: center;
-      gap: clamp(3px, 0.8vw, 4px);
-      padding: clamp(2px, 0.5vw, 3px) clamp(6px, 1.5vw, 8px);
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 10px;
-      font-size: clamp(9px, 2.2vw, 10px);
+      gap: 2px;
+      padding: 2px 5px;
+      background: var(--vscode-badge-background);
+      border-radius: 3px;
+      font-size: 9px;
       font-weight: 600;
       white-space: nowrap;
+      color: var(--vscode-badge-foreground);
+      border: 1px solid transparent;
+      line-height: 1.2;
+    }
+
+    .ref-badge i {
+      font-size: 9px;
     }
 
     .ref-badge.head {
+      background: rgba(var(--vscode-gitDecoration-modifiedResourceForeground), 0.15);
       color: var(--vscode-gitDecoration-modifiedResourceForeground);
-      border-color: var(--vscode-gitDecoration-modifiedResourceForeground);
+      border-color: rgba(var(--vscode-gitDecoration-modifiedResourceForeground), 0.25);
     }
 
     .ref-badge.main {
+      background: rgba(var(--vscode-gitDecoration-addedResourceForeground), 0.15);
       color: var(--vscode-gitDecoration-addedResourceForeground);
-      border-color: var(--vscode-gitDecoration-addedResourceForeground);
+      border-color: rgba(var(--vscode-gitDecoration-addedResourceForeground), 0.25);
     }
 
     .ref-badge.origin {
+      background: var(--vscode-badge-background);
       color: var(--vscode-descriptionForeground);
       border-color: var(--vscode-panel-border);
     }
@@ -1834,21 +1941,29 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
     }
 
     .load-more-btn {
-      padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px);
+      padding: 10px 20px;
       background: var(--vscode-button-background);
       color: var(--vscode-button-foreground);
-      border: none;
-      border-radius: 4px;
+      border: 1px solid var(--vscode-button-background);
+      border-radius: 6px;
       cursor: pointer;
       font-family: inherit;
-      font-size: clamp(11px, 2.8vw, 12px);
+      font-size: 12px;
       font-weight: 500;
       position: relative;
       transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .load-more-btn:hover {
       background: var(--vscode-button-hoverBackground);
+      border-color: var(--vscode-button-hoverBackground);
+    }
+
+    .load-more-btn:active {
+      transform: scale(0.98);
     }
 
     .load-more-btn.loading::after {
@@ -1875,8 +1990,8 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
   private _getScrollbarStyles(): string {
     return `
     ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
     }
 
     ::-webkit-scrollbar-track {
@@ -1885,8 +2000,7 @@ export class RepositoryProvider implements vscode.WebviewViewProvider {
 
     ::-webkit-scrollbar-thumb {
       background: var(--vscode-scrollbarSlider-background);
-      border-radius: 4px;
-      transition: background 0.2s ease;
+      border-radius: 0;
     }
 
     ::-webkit-scrollbar-thumb:hover {
