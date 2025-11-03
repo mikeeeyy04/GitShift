@@ -2,7 +2,7 @@
   "name": "gitshift",
   "displayName": "GitShift",
   "description": "Manage and seamlessly switch between multiple GitHub accounts within VS Code. Easily handle authentication, commit and push as different users, use personal access tokens, and keep your Git configuration in sync across workspaces. Ideal for developers with personal, work, or organizational GitHub accounts.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "mikeeeyy04",
   "icon": "images/icon.png",
   "homepage": "https://github.com/mikeeeyy04/GitShift",
