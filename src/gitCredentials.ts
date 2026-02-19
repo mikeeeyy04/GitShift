@@ -108,12 +108,13 @@ export async function updateRemoteUrlWithToken(remoteName: string, token: string
         const currentUrl = stdout.trim();
 
         // Parse the URL to extract owner/repo and create a CLEAN URL (no token embedded)
+        // Include username so Git credential lookup is deterministic per selected account.
         let cleanUrl: string;
 
         if (currentUrl.startsWith('git@github.com:')) {
             // Convert SSH to HTTPS (clean, no token)
             const repoPath = currentUrl.replace('git@github.com:', '').replace('.git', '');
-            cleanUrl = `https://github.com/${repoPath}.git`;
+            cleanUrl = `https://${username}@github.com/${repoPath}.git`;
         } else if (currentUrl.includes('github.com')) {
             // Remove any embedded credentials and create clean URL
             // Handle URLs like: https://username:token@github.com/owner/repo.git
@@ -130,7 +131,7 @@ export async function updateRemoteUrlWithToken(remoteName: string, token: string
             }
 
             if (repoPath) {
-                cleanUrl = `https://github.com/${repoPath}.git`;
+                cleanUrl = `https://${username}@github.com/${repoPath}.git`;
             } else {
                 throw new Error('Could not parse repository URL');
             }
@@ -265,7 +266,7 @@ export async function migrateEmbeddedCredentials(): Promise<void> {
                 if (!cleanPath.endsWith('.git')) {
                     cleanPath = cleanPath.replace(/\/$/, ''); // Remove trailing slash if present
                 }
-                const cleanUrl = `https://github.com/${cleanPath}`;
+                const cleanUrl = `https://${username}@github.com/${cleanPath}`;
                 
                 await execPromise(`git remote set-url origin "${cleanUrl}"`, {
                     cwd: workspaceRoot
@@ -277,4 +278,3 @@ export async function migrateEmbeddedCredentials(): Promise<void> {
         console.warn(`Failed to migrate embedded credentials: ${error.message}`);
     }
 }
-

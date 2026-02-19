@@ -1,6 +1,6 @@
 # GitShift
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://marketplace.visualstudio.com/items?itemName=mikeeeyy04.gitshift)
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmikeeeyy04%2FGitShift%2Fmain%2Fpackage.json&query=%24.version&label=version&color=blue)](https://marketplace.visualstudio.com/items?itemName=mikeeeyy04.gitshift)
 [![VS Code Version](https://img.shields.io/badge/VS%20Code-1.90.0+-blue.svg)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
