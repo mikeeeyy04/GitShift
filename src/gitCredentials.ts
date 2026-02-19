@@ -35,7 +35,7 @@ async function storeCredentialsInGitStore(username: string, token: string): Prom
     try {
         const credentialStorePath = getCredentialStorePath();
         const credentialLine = `https://${username}:${token}@github.com\n`;
-        
+
         // Read existing credentials
         let existingCredentials = '';
         if (fs.existsSync(credentialStorePath)) {
@@ -67,18 +67,32 @@ async function storeCredentialsInGitStore(username: string, token: string): Prom
  */
 export async function configureGitCredentials(username: string, token: string): Promise<void> {
     const workspaceRoot = getWorkspaceRoot();
-    if (!workspaceRoot) {
-        throw new Error('No workspace folder is open');
-    }
 
     try {
-        // Configure git credential helper to store credentials
-        await execPromise('git config --local credential.helper store', {
-            cwd: workspaceRoot
-        });
-
-        // Store credentials in Git's credential store
+        // Store credentials in Git's credential store (works globally)
         await storeCredentialsInGitStore(username, token);
+
+        // Only configure local credential helper if we have a workspace
+        if (workspaceRoot) {
+            try {
+                // Configure git credential helper to store credentials
+                await execPromise('git config --local credential.helper store', {
+                    cwd: workspaceRoot,
+                    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
+                });
+            } catch (localConfigError: any) {
+                // If local config fails, try global config as fallback
+                console.warn(`Local credential config failed, trying global: ${localConfigError.message}`);
+                await execPromise('git config --global credential.helper store', {
+                    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
+                });
+            }
+        } else {
+            // No workspace, configure globally
+            await execPromise('git config --global credential.helper store', {
+                env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
+            });
+        }
     } catch (error: any) {
         // If credential store fails, we'll fall back to URL embedding
         // Don't throw - let the calling code handle it
@@ -102,7 +116,8 @@ export async function updateRemoteUrlWithToken(remoteName: string, token: string
 
         // Get current remote URL
         const { stdout } = await execPromise(`git remote get-url ${remoteName}`, {
-            cwd: workspaceRoot
+            cwd: workspaceRoot,
+            env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
         });
 
         const currentUrl = stdout.trim();
@@ -119,7 +134,7 @@ export async function updateRemoteUrlWithToken(remoteName: string, token: string
             // Remove any embedded credentials and create clean URL
             // Handle URLs like: https://username:token@github.com/owner/repo.git
             let repoPath: string;
-            
+
             if (currentUrl.includes('@github.com/')) {
                 // Has embedded credentials - extract path after @github.com/
                 repoPath = currentUrl.split('@github.com/')[1]?.replace('.git', '') || '';
@@ -142,7 +157,8 @@ export async function updateRemoteUrlWithToken(remoteName: string, token: string
 
         // Update the remote URL with CLEAN URL (credentials stored separately)
         await execPromise(`git remote set-url ${remoteName} "${cleanUrl}"`, {
-            cwd: workspaceRoot
+            cwd: workspaceRoot,
+            env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
         });
     } catch (error: any) {
         // Don't throw - this is optional functionality
@@ -161,7 +177,8 @@ export async function getRemoteUrl(remoteName: string = 'origin'): Promise<strin
 
     try {
         const { stdout } = await execPromise(`git remote get-url ${remoteName}`, {
-            cwd: workspaceRoot
+            cwd: workspaceRoot,
+            env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
         });
         return stdout.trim();
     } catch (error) {
@@ -224,7 +241,8 @@ export async function removeCredentialsFromRemote(remoteName: string = 'origin')
 
         if (cleanUrl !== currentUrl) {
             await execPromise(`git remote set-url ${remoteName} "${cleanUrl}"`, {
-                cwd: workspaceRoot
+                cwd: workspaceRoot,
+                env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
             });
         }
     } catch (error) {
@@ -254,10 +272,10 @@ export async function migrateEmbeddedCredentials(): Promise<void> {
             const match = remoteUrl.match(/https:\/\/([^:]+):([^@]+)@github\.com\/(.+)/);
             if (match) {
                 const [, username, token, repoPath] = match;
-                
+
                 // Store credentials in Git credential store
                 await storeCredentialsInGitStore(username, token);
-                
+
                 // Remove credentials from URL - preserve the exact path format
                 let cleanPath = repoPath;
                 // Clean up any trailing whitespace or issues
@@ -267,9 +285,10 @@ export async function migrateEmbeddedCredentials(): Promise<void> {
                     cleanPath = cleanPath.replace(/\/$/, ''); // Remove trailing slash if present
                 }
                 const cleanUrl = `https://${username}@github.com/${cleanPath}`;
-                
+
                 await execPromise(`git remote set-url origin "${cleanUrl}"`, {
-                    cwd: workspaceRoot
+                    cwd: workspaceRoot,
+                    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
                 });
             }
         }

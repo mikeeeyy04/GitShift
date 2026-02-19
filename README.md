@@ -289,6 +289,16 @@ The extension automatically:
 
 ## Troubleshooting
 
+### Extension not working in Cursor or Antigravity
+
+If you're using Cursor, Antigravity, or other VS Code forks and git operations are failing after account switching:
+
+1. The extension now includes enhanced compatibility mode that automatically detects VS Code forks
+2. Check the GitShift output channel (View → Output → GitShift) to confirm detection
+3. Git operations now use `GIT_TERMINAL_PROMPT=0` to prevent interactive prompts that can hang in forks
+4. Credential configuration falls back to global config if local config fails
+5. If issues persist, try manually running: `git config --global credential.helper store`
+
 ### "Not in a Git repository" error
 
 Make sure you have a Git repository initialized in your workspace:

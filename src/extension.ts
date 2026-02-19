@@ -37,6 +37,13 @@ export async function activate(context: vscode.ExtensionContext) {
   gitshiftOutputChannel = vscode.window.createOutputChannel('GitShift');
   gitshiftOutputChannel.appendLine('GitShift is now active');
 
+  // Detect VS Code fork (Cursor, Antigravity, etc.)
+  const appName = vscode.env.appName;
+  const isVSCodeFork = !appName.includes('Visual Studio Code');
+  if (isVSCodeFork) {
+    gitshiftOutputChannel.appendLine(`Detected VS Code fork: ${appName}`);
+    gitshiftOutputChannel.appendLine('Using enhanced compatibility mode for git operations');
+  }
 
   // Store context globally for secret storage access
   extensionContext = context;
@@ -400,7 +407,7 @@ export async function activate(context: vscode.ExtensionContext) {
           try {
             // Reconfigure Git credentials with new token
             await configureGitCredentials(user.login, token);
-            
+
             // Update remote URL with new token
             const remoteUrl = await getRemoteUrl('origin');
             if (remoteUrl && remoteUrl.includes('github.com')) {

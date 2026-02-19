@@ -39,7 +39,10 @@ async function executeGitCommand(command: string): Promise<string> {
     const cwd = workspaceFolders[0].uri.fsPath;
 
     try {
-        const { stdout } = await execAsync(`git ${command}`, { cwd });
+        const { stdout } = await execAsync(`git ${command}`, {
+            cwd,
+            env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
+        });
         return stdout.trim();
     } catch (error: any) {
         throw new Error(`Git command failed: ${error.message}`);

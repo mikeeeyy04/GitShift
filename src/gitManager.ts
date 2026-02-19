@@ -35,12 +35,13 @@ async function executeGitCommand(command: string): Promise<string> {
   try {
     const { stdout } = await execPromise(command, {
       cwd: workspaceRoot,
-      encoding: 'utf8'
+      encoding: 'utf8',
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
     });
 
     return stdout.trim();
   } catch (error: any) {
-    throw new Error(`Git command failed`);
+    throw new Error(`Git command failed: ${error.message || 'Unknown error'}`);
   }
 }
 
