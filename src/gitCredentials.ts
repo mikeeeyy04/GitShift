@@ -42,10 +42,10 @@ async function storeCredentialsInGitStore(username: string, token: string): Prom
             existingCredentials = fs.readFileSync(credentialStorePath, 'utf8');
         }
 
-        // Remove any existing entry for github.com with this username
+        // Remove ALL existing entries for github.com so that switching accounts
+        // fully replaces the old credential instead of appending a second one.
         const lines = existingCredentials.split('\n').filter(line => {
-            // Remove lines that match this username for github.com
-            return !(line.includes('github.com') && line.includes(username));
+            return !line.includes('github.com');
         });
 
         // Add the new credential
